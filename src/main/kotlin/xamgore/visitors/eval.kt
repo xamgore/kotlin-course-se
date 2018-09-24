@@ -4,7 +4,7 @@ import xamgore.*
 import xamgore.Function
 import java.util.LinkedHashMap
 
-class Context<T>(val parent: Context<T>?) {
+class Context<T>(private val parent: Context<T>?) {
     private val funs = LinkedHashMap<String, Function>()
     private val vars = LinkedHashMap<String, T?>()
 

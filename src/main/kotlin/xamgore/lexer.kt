@@ -46,7 +46,7 @@ class Lexer(val input: String) : Iterable<Token> {
     private var pos = 0
     private var ch: Char = ' '
     private val EOF = 0.toChar()
-    public val EOL = '\n'
+    val EOL = '\n'
 
     private var currentToken: Token = createToken(Type.COMMENT)
 
@@ -80,10 +80,6 @@ class Lexer(val input: String) : Iterable<Token> {
         }
 
         return ch
-    }
-
-    private fun seekNext(i: Int = 0): Char {
-        return if (pos + i >= input.length) EOF else input[pos + i]
     }
 
     private fun skipSpaces() {

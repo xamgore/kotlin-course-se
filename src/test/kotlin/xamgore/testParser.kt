@@ -2,7 +2,6 @@ package xamgore
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import xamgore.Type.*
 import xamgore.visitors.Printer
 
 class TestParser {

@@ -7,7 +7,7 @@ class Printer : Visitor {
     private var code: String = ""
     private val indent = "    "
 
-    public fun result() = code
+    fun result() = code
 
     override fun visit(s: Block) {
         val list = mutableListOf<String>()
@@ -78,7 +78,7 @@ class Printer : Visitor {
         s.expr.accept(this)
         val expr = code
 
-        code = "${s.id.value} = ${expr}"
+        code = "${s.id.value} = $expr"
     }
 
     override fun visit(s: Binding) {
@@ -109,14 +109,14 @@ class Printer : Visitor {
         s.`else`?.let {
             it.accept(this)
             val res = code.prependIndent(indent)
-            elseBranch = " else {\n${res}\n}"
+            elseBranch = " else {\n$res\n}"
         }
 
         code = "if ($clause) {\n$then\n}$elseBranch"
     }
 
     override fun visit(s: Function) {
-        val params = s.params.map { it.value }.joinToString(", ")
+        val params = s.params.joinToString(", ") { it.value }
 
         s.body.accept(this)
         val body = code.prependIndent(indent)

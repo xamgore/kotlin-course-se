@@ -101,6 +101,6 @@ class TestEval {
         assertEquals(expected.trim(), sb.toString().trim())
     }
 
-    fun getPrintLn(sb: StringBuilder): (Any?) -> Unit =
+    private fun getPrintLn(sb: StringBuilder): (Any?) -> Unit =
         { sb.appendln(it.toString()) }
 }
