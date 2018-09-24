@@ -1,4 +1,4 @@
-package ru.hse.spb
+package xamgore
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -6,6 +6,5 @@ import org.junit.Test
 class TestSource {
     @Test
     fun testGreeting() {
-        assertEquals("Hello, world!", getGreeting())
     }
 }
