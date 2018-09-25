@@ -2,7 +2,7 @@ package xamgore.visitors
 
 import xamgore.*
 import xamgore.Function
-import java.util.LinkedHashMap
+import java.util.*
 
 class Context<T>(private val parent: Context<T>?) {
     private val funs = LinkedHashMap<String, Function>()
@@ -18,15 +18,25 @@ class Context<T>(private val parent: Context<T>?) {
         funs[id] = f
     }
 
-    fun setVar(id: String, value: T?) {
+    fun initVarIfNotDefined(id: String, value: T? = null) {
+        if (id in vars)
+            throw Exception("Variable $id is already defined in the current block")
+
         vars[id] = value
     }
 
-    fun getFun(id: String): Function =
-        funs.getOrElse(id) { parent?.getFun(id) ?: throw Exception("Call of undefined function $id") }
+    fun setVarIfExists(id: String, value: T?) {
+        if (id in vars)
+            vars[id] = value
+        else
+            parent?.setVarIfExists(id, value) ?: throw Exception("Usage of undefined variable $id")
+    }
 
-    fun getVar(id: String): T? =
-        vars.getOrElse(id) { parent?.getVar(id) ?: throw Exception("Usage of undefined variable $id") }
+    fun getFunIfDefined(id: String): Function =
+        funs.getOrElse(id) { parent?.getFunIfDefined(id) ?: throw Exception("Call of undefined function $id") }
+
+    fun getVarIfDefined(id: String): T? =
+        vars.getOrElse(id) { parent?.getVarIfDefined(id) ?: throw Exception("Usage of undefined variable $id") }
 }
 
 class Eval(val printLn: (Any?) -> Unit = ::println) : Visitor {
@@ -42,7 +52,14 @@ class Eval(val printLn: (Any?) -> Unit = ::println) : Visitor {
     }
 
     override fun visit(s: Block) {
-        for (st in s.statements) {
+        val outerCtx = ctx
+        ctx = newCtx(parent = outerCtx)
+        visit(s.statements)
+        ctx = outerCtx
+    }
+
+    private fun visit(statements: List<Statement>) {
+        for (st in statements) {
             st.accept(this)
 
             val isBreakableCode = st is If || st is While || st is Return
@@ -57,7 +74,7 @@ class Eval(val printLn: (Any?) -> Unit = ::println) : Visitor {
     }
 
     override fun visit(s: Identifier) {
-        result = ctx.getVar(s.id.value)
+        result = ctx.getVarIfDefined(s.id.value)
     }
 
     private fun Int.toBool() = this != 0
@@ -94,7 +111,7 @@ class Eval(val printLn: (Any?) -> Unit = ::println) : Visitor {
 
     override fun visit(s: FunctionCall) {
         val id = s.id.value
-        val func = ctx.getFun(id)
+        val func = ctx.getFunIfDefined(id)
 
         if (func === this.println)
             return this.printExpressions(s.args)
@@ -107,12 +124,12 @@ class Eval(val printLn: (Any?) -> Unit = ::println) : Visitor {
 
         func.params.zip(s.args) { param, arg ->
             arg.accept(this)
-            innerCtx.setVar(param.value, result)
+            innerCtx.initVarIfNotDefined(param.value, result)
             result = null
         }
 
         ctx = innerCtx
-        func.body.accept(this)
+        visit(func.body.statements)
         result = result ?: 0
         ctx = outerCtx
     }
@@ -128,19 +145,17 @@ class Eval(val printLn: (Any?) -> Unit = ::println) : Visitor {
 
     override fun visit(s: Assignment) {
         s.expr.accept(this)
-        // check there was a declaration before
-        ctx.getVar(s.id.value)
-        ctx.setVar(s.id.value, result)
+        ctx.setVarIfExists(s.id.value, result)
         result = null
     }
 
     override fun visit(s: Binding) {
         val id = s.id.value
-        ctx.setVar(id, null)
+        ctx.initVarIfNotDefined(id)
 
         s.expr?.let {
             it.accept(this)
-            ctx.setVar(id, result)
+            ctx.setVarIfExists(id, result)
         }
 
         result = null

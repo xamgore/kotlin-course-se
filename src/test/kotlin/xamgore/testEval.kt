@@ -101,6 +101,28 @@ class TestEval {
         assertEquals(expected.trim(), sb.toString().trim())
     }
 
+    @Test
+    fun `variables in inner block are different from outer one`() {
+        val source = """
+            var i = 0
+            if (0 == 0) {
+                var i = 1
+                println(i) // prints 1
+            }
+            println(i) // prints 0
+        """.trimIndent()
+
+        val expected = """
+            1
+            0
+        """.trimIndent()
+
+        val sb = StringBuilder()
+        val evaluator = Eval(getPrintLn(sb))
+        Parser(Lexer(source)).parse().accept(evaluator)
+        assertEquals(expected.trim(), sb.toString().trim())
+    }
+
     private fun getPrintLn(sb: StringBuilder): (Any?) -> Unit =
         { sb.appendln(it.toString()) }
 }
