@@ -123,6 +123,96 @@ class TestEval {
         assertEquals(expected.trim(), sb.toString().trim())
     }
 
+    @Test
+    fun `scope is created on definition, not evaluation`() {
+        val source = """
+            var i = 1
+
+            fun f() {
+                println(i)
+            }
+
+            fun g() {
+                var i = 2
+                fun h() {
+                   println(i)
+                }
+
+                f() // prints 1
+                h() // prints 2
+            }
+
+            g()
+        """.trimIndent()
+
+        val expected = """
+            1
+            2
+        """.trimIndent()
+
+        val sb = StringBuilder()
+        val evaluator = Eval(getPrintLn(sb))
+        Parser(Lexer(source)).parse().accept(evaluator)
+        assertEquals(expected.trim(), sb.toString().trim())
+    }
+
+    @Test
+    fun `it is possible to call function from outer scope`() {
+        val source = """
+            fun f() {
+                println(1)
+                g()
+            }
+
+            fun g() {
+                println(2)
+            }
+
+            f()
+        """.trimIndent()
+
+        val expected = """
+            1
+            2
+        """.trimIndent()
+
+        val sb = StringBuilder()
+        val evaluator = Eval(getPrintLn(sb))
+        Parser(Lexer(source)).parse().accept(evaluator)
+        assertEquals(expected.trim(), sb.toString().trim())
+    }
+
+    @Test
+    fun `check function collisions`() {
+        val source = """
+            var i = 1
+
+            fun h() {
+                println(i, 4)
+            }
+
+            fun g() {
+                var i = 2
+                fun h() {
+                   println(i, 9)
+                }
+
+                h() // prints 2, 9
+            }
+
+            g()
+        """.trimIndent()
+
+        val expected = """
+            2 9
+        """.trimIndent()
+
+        val sb = StringBuilder()
+        val evaluator = Eval(getPrintLn(sb))
+        Parser(Lexer(source)).parse().accept(evaluator)
+        assertEquals(expected.trim(), sb.toString().trim())
+    }
+
     private fun getPrintLn(sb: StringBuilder): (Any?) -> Unit =
         { sb.appendln(it.toString()) }
 }

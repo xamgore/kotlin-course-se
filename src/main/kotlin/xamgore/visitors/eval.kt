@@ -32,8 +32,10 @@ class Context<T>(private val parent: Context<T>?) {
             parent?.setVarIfExists(id, value) ?: throw Exception("Usage of undefined variable $id")
     }
 
-    fun getFunIfDefined(id: String): Function =
-        funs.getOrElse(id) { parent?.getFunIfDefined(id) ?: throw Exception("Call of undefined function $id") }
+    fun getFunIfDefined(id: String): Pair<Function, Context<T>> =
+        funs[id]?.let { return Pair(it, this) }
+            ?: parent?.getFunIfDefined(id)
+            ?: throw Exception("Call of undefined function $id")
 
     fun getVarIfDefined(id: String): T? =
         vars.getOrElse(id) { parent?.getVarIfDefined(id) ?: throw Exception("Usage of undefined variable $id") }
@@ -111,7 +113,7 @@ class Eval(val printLn: (Any?) -> Unit = ::println) : Visitor {
 
     override fun visit(s: FunctionCall) {
         val id = s.id.value
-        val func = ctx.getFunIfDefined(id)
+        val (func, fnOuterCtx) = ctx.getFunIfDefined(id)
 
         if (func === this.println)
             return this.printExpressions(s.args)
@@ -119,8 +121,8 @@ class Eval(val printLn: (Any?) -> Unit = ::println) : Visitor {
         if (func.params.size != s.args.size)
             throw Exception("Number of actual arguments differs from defined in function $id")
 
-        val outerCtx = ctx
-        val innerCtx = newCtx(parent = outerCtx)
+        val evaluatorCtx = ctx
+        val innerCtx = newCtx(parent = fnOuterCtx)
 
         func.params.zip(s.args) { param, arg ->
             arg.accept(this)
@@ -131,7 +133,7 @@ class Eval(val printLn: (Any?) -> Unit = ::println) : Visitor {
         ctx = innerCtx
         visit(func.body.statements)
         result = result ?: 0
-        ctx = outerCtx
+        ctx = evaluatorCtx
     }
 
     private fun printExpressions(args: List<Expression>) {
