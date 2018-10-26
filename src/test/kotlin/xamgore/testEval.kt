@@ -6,6 +6,22 @@ import xamgore.visitors.Eval
 
 class TestEval {
     @Test
+    fun testBinaryExpression() {
+        val source = """
+            var a = 3 - 2 - 1
+            println(a)
+        """.trimIndent()
+
+        val expected = "0"
+        val sb = StringBuilder()
+        val printLn: (Any?) -> Unit = getPrintLn(sb)
+
+        val evaluator = Eval(printLn)
+        Parser(Lexer(source)).parse().accept(evaluator)
+        assertEquals(expected.trim(), sb.toString().trim())
+    }
+
+    @Test
     fun testExample1() {
         val source = """
             // example 1

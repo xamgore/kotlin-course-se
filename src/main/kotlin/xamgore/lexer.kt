@@ -62,7 +62,7 @@ class Lexer(val input: String) : Iterable<Token> {
         val source = input.split(EOL)[row]
 
         println("\n$row:$col $message\n$source\n$spaces^\n")
-        System.exit(0)
+        throw Exception()
     }
 
     private fun nextChar(): Char {

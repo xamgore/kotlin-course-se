@@ -4,12 +4,21 @@ package xamgore
 class Parser(private val lexer: Lexer) {
 
     private val tokens = lexer.filter { it.type != Type.COMMENT }.toList()
+
     private var pos: Int = 0
 
     private val EOF = Token(Type.EOF)
 
     private val type: Type
         get() = this[0].type
+
+    private final val orList = listOf(Type.`||`)
+    private final val andList = listOf(Type.`&&`)
+    private final val equalityList = listOf(Type.`==`, Type.`!=`)
+    private final val compareList = listOf(Type.LESS, Type.LESS_EQ, Type.GREATER, Type.GREATER_EQ)
+    private final val plusList = listOf(Type.`+`, Type.`-`)
+    private final val multiplyList = listOf(Type.`*`, Type.`%`, Type.DIV)
+
 
     fun parse(): Node = block(Type.EOF)
 
@@ -76,22 +85,22 @@ class Parser(private val lexer: Lexer) {
     private fun expression(): Expression = binaryLogicalOr()
 
     private fun binaryLogicalOr(): Expression =
-        binary(listOf(Type.`||`), ::binaryLogicalAnd)
+        binary(orList, ::binaryLogicalAnd)
 
     private fun binaryLogicalAnd(): Expression =
-        binary(listOf(Type.`&&`), ::binaryEquality)
+        binary(andList, ::binaryEquality)
 
     private fun binaryEquality(): Expression =
-        binary(listOf(Type.`==`, Type.`!=`), ::binaryCompare)
+        binary(equalityList, ::binaryCompare)
 
     private fun binaryCompare(): Expression =
-        binary(listOf(Type.LESS, Type.LESS_EQ, Type.GREATER, Type.GREATER_EQ), ::binaryAdd)
+        binary(compareList, ::binaryAdd)
 
     private fun binaryAdd(): Expression =
-        binary(listOf(Type.`+`, Type.`-`), ::binaryMult)
+        binary(plusList, ::binaryMult)
 
     private fun binaryMult(): Expression =
-        binary(listOf(Type.`*`, Type.`%`, Type.DIV), ::operand)
+        binary(multiplyList, ::operand)
 
     private fun operand(): Expression {
         // ( expr )
@@ -114,10 +123,10 @@ class Parser(private val lexer: Lexer) {
     }
 
     private fun binary(operators: List<Type>, getOperand: () -> Expression): Expression {
-        val leftOperand = getOperand()
+        var leftOperand = getOperand()
 
-        if (type in operators)
-            return BinaryExpression(op = consume(), left = leftOperand, right = getOperand())
+        while (type in operators)
+            leftOperand = BinaryExpression(op = consume(), left = leftOperand, right = getOperand())
 
         return leftOperand
     }
